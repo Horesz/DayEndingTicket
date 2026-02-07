@@ -27,24 +27,29 @@ class RegisteredUserController extends Controller
      *
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function store(Request $request): RedirectResponse
-    {
-        $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
-        ]);
+  public function store(Request $request): RedirectResponse
+{
+    $request->validate([
+        'name' => ['required', 'string', 'max:255'],
+        'email' => ['required', 'string', 'email', 'max:255', 'unique:'.User::class],
+        'password' => ['required', 'confirmed', Rules\Password::defaults()],
+    ]);
 
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-        ]);
+    // Alapértelmezett "dolgozó" szerepkör lekérése
+    $dolgozoRole = \App\Models\Role::where('name', 'dolgozo')->first();
 
-        event(new Registered($user));
+    $user = User::create([
+        'name' => $request->name,
+        'email' => $request->email,
+        'password' => Hash::make($request->password),
+        'role_id' => $dolgozoRole->id, // Alapértelmezett szerepkör
+        'fiok_id' => null, // Nincs még hozzárendelve fiók
+    ]);
 
-        Auth::login($user);
+    event(new Registered($user));
 
-        return redirect(route('dashboard', absolute: false));
-    }
+    Auth::login($user);
+
+    return redirect(route('dashboard'));
+}
 }
