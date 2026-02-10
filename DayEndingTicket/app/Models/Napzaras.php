@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+
 
 class Napzaras extends Model
 {
@@ -37,6 +39,18 @@ class Napzaras extends Model
         'jovahagyva_at' => 'datetime',
     ];
 
+public function dolgozok()
+{
+    return $this->belongsToMany(User::class, 'napzaras_dolgozo')
+                ->withPivot('napi_ber', 'megjegyzes')
+                ->withTimestamps();
+}
+
+// Összesített napi bér (a pivot táblából számolva)
+public function getNapiBerAttribute()
+{
+    return $this->dolgozok->sum('pivot.napi_ber');
+}
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

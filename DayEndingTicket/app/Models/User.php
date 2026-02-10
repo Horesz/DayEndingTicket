@@ -43,10 +43,12 @@ class User extends Authenticatable
         return $this->belongsTo(Fiok::class);
     }
 
-    public function napzarasok(): HasMany
-    {
-        return $this->hasMany(Napzaras::class);
-    }
+    public function napzarasok()
+{
+    return $this->belongsToMany(Napzaras::class, 'napzaras_dolgozo')
+                ->withPivot('napi_ber', 'megjegyzes')
+                ->withTimestamps();
+}
 
     public function beosztasok(): HasMany
     {
@@ -83,4 +85,11 @@ class User extends Authenticatable
 
         return in_array($permission, $permissions[$this->role->name] ?? []);
     }
+
+    public function isNapiBeru()
+{
+    return $this->fizetes_tipus === 'napi';
+}
+
+
 }

@@ -7,8 +7,6 @@ use App\Models\Fiok;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
-use Maatwebsite\Excel\Facades\Excel;
-use App\Exports\NapzarasExport;
 
 class ReportController extends Controller
 {
@@ -103,19 +101,106 @@ class ReportController extends Controller
         ));
     }
 
-    public function export(Request $request)
+    public function exportCsv(Request $request)
     {
         if (!auth()->user()->hasPermission('view_reports')) {
             abort(403);
         }
 
-        $datum_tol = $request->filled('datum_tol') ? $request->datum_tol : Carbon::now()->startOfMonth();
-        $datum_ig = $request->filled('datum_ig') ? $request->datum_ig : Carbon::now()->endOfMonth();
+        $user = auth()->user();
+        $datum_tol = $request->filled('datum_tol') ? $request->datum_tol : now()->startOfMonth();
+        $datum_ig = $request->filled('datum_ig') ? $request->datum_ig : now()->endOfMonth();
         $fiok_id = $request->filled('fiok_id') ? $request->fiok_id : null;
 
-        return Excel::download(
-            new NapzarasExport($datum_tol, $datum_ig, $fiok_id), 
-            'napzarasok_' . now()->format('Y-m-d') . '.xlsx'
-        );
+        $query = Napzaras::with(['user', 'fiok', 'jovahagyo'])
+            ->whereBetween('datum', [$datum_tol, $datum_ig])
+            ->where('statusz', 'approved');
+
+        if ($user->isAdmin() && $user->fiok_id) {
+            $query->where('fiok_id', $user->fiok_id);
+        } elseif ($fiok_id && $user->isRendszergazda()) {
+            $query->where('fiok_id', $fiok_id);
+        }
+
+        $napzarasok = $query->orderBy('datum')->get();
+
+        // CSV generálás
+        $filename = 'napzarasok_' . now()->format('Y-m-d_His') . '.csv';
+        
+        $headers = [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"$filename\"",
+            'Pragma' => 'no-cache',
+            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires' => '0'
+        ];
+
+        $callback = function() use ($napzarasok) {
+            $file = fopen('php://output', 'w');
+            
+            // BOM UTF-8-hoz
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+            
+            // Fejléc
+            fputcsv($file, [
+                'Dátum',
+                'Fiók',
+                'Fiók kód',
+                'Dolgozó',
+                'Kártya bevétel (Ft)',
+                'Készpénz bevétel (Ft)',
+                'Online bevétel (Ft)',
+                'Egyéb bevétel (Ft)',
+                'Össz bevétel (Ft)',
+                'Napi bér (Ft)',
+                'Költségek (Ft)',
+                'Össz kiadás (Ft)',
+                'Eredmény (Ft)',
+                'Státusz',
+                'Jóváhagyta',
+                'Jóváhagyva',
+                'Megjegyzés'
+            ], ';');
+
+            // Adatok
+            foreach ($napzarasok as $napzaras) {
+                fputcsv($file, [
+                    $napzaras->datum->format('Y-m-d'),
+                    $napzaras->fiok->nev,
+                    $napzaras->fiok->kod,
+                    $napzaras->user->name,
+                    $napzaras->kartya_bevetel,
+                    $napzaras->keszpenz_bevetel,
+                    $napzaras->online_bevetel,
+                    $napzaras->egyeb_bevetel,
+                    $napzaras->ossz_bevetel,
+                    $napzaras->napi_ber,
+                    $napzaras->koltsegek,
+                    $napzaras->ossz_kiadas,
+                    $napzaras->eredmeny,
+                    match($napzaras->statusz) {
+                        'pending' => 'Függőben',
+                        'approved' => 'Jóváhagyva',
+                        'rejected' => 'Elutasítva',
+                    },
+                    $napzaras->jovahagyo?->name ?? '-',
+                    $napzaras->jovahagyva_at?->format('Y-m-d H:i') ?? '-',
+                    $napzaras->megjegyzes ?? ''
+                ], ';');
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    public function exportJson(Request $request)
+    {
+        if (!auth()->user()->hasPermission('view_reports')) {
+            abort(403);
+        }
+
+        return response()->json([]);
     }
 }

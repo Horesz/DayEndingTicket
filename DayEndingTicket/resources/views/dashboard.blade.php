@@ -206,6 +206,18 @@
                         <p class="text-xs text-gray-500">Munkabeosztás nézet</p>
                     </div>
                 </a>
+
+                @if(!auth()->user()->isDolgozo())
+                    <a href="{{ route('admin.users.create') }}" class="flex items-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition">
+                        <svg class="h-10 w-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+                        </svg>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-900">Új felhasználó</p>
+                            <p class="text-xs text-gray-500">Dolgozó / manager felvétel</p>
+                        </div>
+                    </a>
+                @endif
             </div>
         </div>
     </div>
@@ -249,7 +261,7 @@
     </div>
     @endif
 
-    <!-- Utolsó napzárások -->
+    <!-- Legutóbbi napzárások -->
     <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
         <div class="p-6">
             <h3 class="text-lg font-semibold text-gray-900 mb-4">Legutóbbi napzárások</h3>
@@ -276,4 +288,15 @@
                         </div>
                     @endforeach
                 </div>
-                <div cla
+                <div class="mt-4">
+                    <a href="{{ route('napzarasok.index') }}" class="text-indigo-600 hover:text-indigo-900 text-sm font-medium">
+                        Összes napzárás megtekintése →
+                    </a>
+                </div>
+            @else
+                <p class="text-gray-500 text-sm">Még nincs napzárás rögzítve.</p>
+            @endif
+        </div>
+    </div>
+</div>
+@endsection
