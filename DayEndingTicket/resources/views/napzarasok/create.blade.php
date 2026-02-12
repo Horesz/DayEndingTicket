@@ -250,7 +250,31 @@ function updateOsszesKiadas() {
     });
     document.getElementById('kiadas-osszes').textContent = sum.toLocaleString('hu-HU') + ' Ft';
 }
-
+document.getElementById('add-dolgozo-btn').addEventListener('click', function() {
+    const template = document.getElementById('napi-ber-template');
+    const clone = template.content.cloneNode(true);
+    
+    // "Nincs dolgozó" üzenet eltüntetése
+    const noMsg = document.getElementById('no-dolgozo-yet');
+    if (noMsg) noMsg.remove();
+    
+    // Clone hozzáadása
+    document.getElementById('napi-berek-container').appendChild(clone);
+    
+    // Remove gomb eseménykezelő
+    document.querySelectorAll('.remove-dolgozo').forEach(btn => {
+        btn.addEventListener('click', function() {
+            this.closest('.napi-ber-row').remove();
+            
+            // Ha nincs több sor, újra megjelenítjük az üzenetet
+            const rows = document.querySelectorAll('.napi-ber-row');
+            if (rows.length === 0) {
+                document.getElementById('napi-berek-container').innerHTML = 
+                    '<div class="text-center text-gray-500 py-8" id="no-dolgozo-yet">Még nincs hozzáadott napi bérű dolgozó</div>';
+            }
+        });
+    });
+});
 // Inicializálás
 updateOsszesBevetel();
 updateOsszesKiadas();

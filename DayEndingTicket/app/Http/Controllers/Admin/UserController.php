@@ -28,26 +28,38 @@ class UserController extends Controller
     }
 
     public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'name'     => ['required', 'string', 'max:255'],
-            'email'    => ['required', 'string', 'email', 'max:255', 'unique:users'],
-            'password' => ['required', 'confirmed', Password::defaults()],
-            'role_id'  => ['required', 'exists:roles,id'],
-            'fiok_id'  => ['nullable', 'exists:fiokok,id'],
-        ]);
+{
+    $validated = $request->validate([
+        'name'      => ['required', 'string', 'max:255'],
+        'email'     => ['required', 'email', 'unique:users'],
+        'password'  => ['required', 'confirmed', Password::defaults()],
+        'role_id'   => ['required', 'exists:roles,id'],
+        'fiok_id'   => ['nullable', 'exists:fiokok,id'],
 
-        $user = User::create([
-            'name'     => $validated['name'],
-            'email'    => $validated['email'],
-            'password' => Hash::make($validated['password']),
-            'role_id'  => $validated['role_id'],
-            'fiok_id'  => $validated['fiok_id'] ?? null,
-        ]);
+        'ber_tipus' => ['required', 'in:napi,fix'],
+        'alap_ber'  => ['nullable', 'numeric', 'min:0'],
+    ]);
 
-        return redirect()->route('admin.users.index')
-            ->with('success', "Felhasználó létrehozva: {$user->name}");
+    // üzleti szabály
+    if ($validated['ber_tipus'] === 'napi') {
+        $validated['alap_ber'] = null;
     }
+
+    $user = User::create([
+        'name'      => $validated['name'],
+        'email'     => $validated['email'],
+        'password'  => Hash::make($validated['password']),
+        'role_id'   => $validated['role_id'],
+        'fiok_id'   => $validated['fiok_id'] ?? null,
+        'ber_tipus' => $validated['ber_tipus'],
+        'alap_ber'  => $validated['alap_ber'],
+    ]);
+
+    return redirect()
+        ->route('admin.users.index')
+        ->with('success', "Felhasználó létrehozva: {$user->name}");
+}
+
 
     // edit, update, destroy stb. hasonlóan...
 }

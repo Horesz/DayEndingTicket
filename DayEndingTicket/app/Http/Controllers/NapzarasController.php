@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Napzaras;
 use App\Models\Fiok;
 use Illuminate\Http\Request;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
@@ -48,17 +49,30 @@ class NapzarasController extends Controller
         return view('napzarasok.index', compact('napzarasok', 'fiokok'));
     }
 
-    public function create()
-    {
-        $user = auth()->user();
-        
-        // Dolgozó csak saját fiókjához tud napzárást készíteni
-        $fiokok = $user->isDolgozo() 
-            ? Fiok::where('id', $user->fiok_id)->get()
-            : Fiok::where('aktiv', true)->get();
+   public function create()
+{
+    $user = auth()->user();
+    
+    // Dolgozó csak saját fiókjához tud napzárást készíteni
+    $fiokok = $user->isDolgozo() 
+        ? Fiok::where('id', $user->fiok_id)->get()
+        : Fiok::where('aktiv', true)->get();
 
-        return view('napzarasok.create', compact('fiokok'));
-    }
+    // Napi bérű dolgozók lekérése
+    $napi_beru_dolgozok = User::with('fiok')
+        ->where('ber_tipus', 'napi')
+        ->whereHas('role', function($query) {
+            $query->where('name', 'dolgozo');
+        })
+        ->when($user->isAdmin() && $user->fiok_id, function($query) use ($user) {
+            // Admin csak saját fiókjának dolgozóit látja
+            return $query->where('fiok_id', $user->fiok_id);
+        })
+        ->orderBy('name')
+        ->get();
+
+    return view('napzarasok.create', compact('fiokok', 'napi_beru_dolgozok'));
+}
 
     public function store(Request $request)
 {

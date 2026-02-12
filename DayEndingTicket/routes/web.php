@@ -62,8 +62,7 @@ Route::delete('napzarasok/{napzaras}', [NapzarasController::class, 'destroy'])->
 Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
     Route::resource('users', \App\Http\Controllers\Admin\UserController::class)
         ->except(['show']); // show opcionális
-        Route::get('/admin/users/create', [UserController::class, 'create'])->name('admin.users.create');
-// vagy resource esetén automatikusan létrejön
+        
 });
 });
 

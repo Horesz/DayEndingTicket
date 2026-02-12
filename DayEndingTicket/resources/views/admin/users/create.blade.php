@@ -114,6 +114,34 @@
                                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                             @enderror
                         </div>
+                        <!-- Bér típusa -->
+<div class="relative">
+    <select name="ber_tipus" id="ber_tipus" required
+        class="peer block w-full rounded-lg border-gray-300 bg-gray-50 px-4 py-3">
+        <option value="" disabled selected hidden></option>
+        <option value="napi" {{ old('ber_tipus') === 'napi' ? 'selected' : '' }}>
+            Napi béres
+        </option>
+        <option value="fix" {{ old('ber_tipus') === 'fix' ? 'selected' : '' }}>
+            Állandó (fix)
+        </option>
+    </select>
+    <label class="absolute left-4 -top-2.5 bg-white px-2 text-sm">
+        Bér típusa *
+    </label>
+</div>
+
+<!-- Alapbér -->
+<div class="relative" id="alapBerWrapper">
+    <input type="number" step="0.01" name="alap_ber" id="alap_ber"
+        value="{{ old('alap_ber') }}"
+        class="peer block w-full rounded-lg border-gray-300 bg-gray-50 px-4 py-3"
+        placeholder="Havi alapbér">
+    <label class="absolute left-4 -top-2.5 bg-white px-2 text-sm">
+        Alapbér (fix dolgozó)
+    </label>
+</div>
+
 
                         <!-- Fiók -->
                         <div class="relative">
@@ -155,4 +183,18 @@
     </div>
 
 </div>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const berTipus = document.getElementById('ber_tipus');
+    const alapBer = document.getElementById('alapBerWrapper');
+
+    function toggleAlapBer() {
+        alapBer.style.display = berTipus.value === 'fix' ? 'block' : 'none';
+    }
+
+    berTipus.addEventListener('change', toggleAlapBer);
+    toggleAlapBer();
+});
+</script>
+
 @endsection
