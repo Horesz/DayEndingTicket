@@ -6,20 +6,22 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('beosztas_kommentek', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('beosztas_id')
+                ->constrained('beosztas') // ← EGYES SZÁM, mert a tábla neve 'beosztas'
+                ->cascadeOnDelete();
+            $table->foreignId('user_id')
+                ->constrained('users')
+                ->cascadeOnDelete();
+            $table->text('komment');
+            $table->enum('tipus', ['megjegyzes', 'csere_keres'])->default('megjegyzes');
             $table->timestamps();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('beosztas_kommentek');

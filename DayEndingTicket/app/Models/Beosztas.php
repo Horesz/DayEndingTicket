@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Beosztas extends Model
 {
-    protected $table = 'beosztas';
+    protected $table = 'beosztas'; // ← EGYES SZÁM!
     
     protected $fillable = [
         'user_id',
@@ -15,7 +16,7 @@ class Beosztas extends Model
         'datum',
         'kezdes',
         'befejezes',
-        'megjegyzes'
+        'megjegyzes',
     ];
 
     protected $casts = [
@@ -30,5 +31,10 @@ class Beosztas extends Model
     public function fiok(): BelongsTo
     {
         return $this->belongsTo(Fiok::class);
+    }
+
+    public function kommentek(): HasMany
+    {
+        return $this->hasMany(BeosztasKomment::class);
     }
 }

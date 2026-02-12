@@ -61,6 +61,34 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:admin,rendszergazda')->prefix('admin')->name('admin.')->group(function () {
         Route::resource('users', \App\Http\Controllers\Admin\UserController::class);
     });
+    Route::get('/beosztas', [BeosztasController::class, 'index'])->name('beosztas.index');
+Route::post('/beosztas', [BeosztasController::class, 'store'])
+    ->name('beosztas.store')
+    ->middleware('role:admin,rendszergazda');
+Route::put('/beosztas/{beosztas}', [BeosztasController::class, 'update'])
+    ->name('beosztas.update')
+    ->middleware('role:admin,rendszergazda');
+Route::middleware(['auth'])->group(function () {
+    Route::get('/beosztas/create', [BeosztasController::class, 'create'])->name('beosztas.create');
+    Route::post('/beosztas', [BeosztasController::class, 'store'])->name('beosztas.store');
+});Route::get('/beosztas/{beosztas}/edit', [BeosztasController::class, 'edit']) ->name('beosztas.edit') ->middleware('role:admin,rendszergazda');
+
+
+Route::delete('/beosztas/{beosztas}', [BeosztasController::class, 'destroy'])
+    ->name('beosztas.destroy')
+    ->middleware('role:admin,rendszergazda');
+    Route::resource('beosztas', BeosztasController::class);
+Route::get('beosztas/export/google', [BeosztasController::class, 'exportGoogleCalendar'])
+    ->name('beosztas.export.google');
+Route::get('beosztas/print', [BeosztasController::class, 'print']) ->name('beosztas.print');
+
+// ÚJ: Kommentek és export
+Route::post('/beosztas/{beosztas}/komment', [BeosztasController::class, 'addKomment'])
+    ->name('beosztas.komment');
+Route::get('/beosztas/export/google-calendar', [BeosztasController::class, 'exportGoogleCalendar'])
+    ->name('beosztas.export.google');
+Route::get('/beosztas/print', [BeosztasController::class, 'print'])
+    ->name('beosztas.print');
 });
 
 // Auth route-ok
