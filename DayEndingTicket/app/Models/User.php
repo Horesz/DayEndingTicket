@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -19,8 +18,8 @@ class User extends Authenticatable
         'password',
         'role_id',
         'fiok_id',
-        'ber_tipus',   // napi | fix
-        'alap_ber',    // havi alapbér (fixnél)
+        'ber_tipus',
+        'alap_ber',
     ];
 
     protected $hidden = [
@@ -37,10 +36,6 @@ class User extends Authenticatable
         ];
     }
 
-    /* =========================
-     |  KAPCSOLATOK
-     ========================= */
-
     public function role(): BelongsTo
     {
         return $this->belongsTo(Role::class);
@@ -51,14 +46,9 @@ class User extends Authenticatable
         return $this->belongsTo(Fiok::class);
     }
 
-    /**
-     * Napzárások – pivot táblával (napzaras_user)
-     */
-    public function napzarasok(): BelongsToMany
+    public function napzarasok(): HasMany
     {
-        return $this->belongsToMany(Napzaras::class, 'napzaras_user')
-            ->withPivot(['osszeg', 'megjegyzes'])
-            ->withTimestamps();
+        return $this->hasMany(Napzaras::class);
     }
 
     public function beosztasok(): HasMany
@@ -66,92 +56,34 @@ class User extends Authenticatable
         return $this->hasMany(Beosztas::class);
     }
 
-    /* =========================
-     |  SZEREPKÖR SEGÉDEK
-     ========================= */
-
+    // Helper methods
     public function isDolgozo(): bool
     {
-        return $this->role?->name === 'dolgozo';
+        return $this->role->name === 'dolgozo';
     }
 
     public function isAdmin(): bool
     {
-        return $this->role?->name === 'admin';
+        return $this->role->name === 'admin';
     }
 
     public function isRendszergazda(): bool
     {
-        return $this->role?->name === 'rendszergazda';
+        return $this->role->name === 'rendszergazda';
     }
-
-    /* =========================
-     |  JOGOSULTSÁGOK
-     ========================= */
 
     public function hasPermission(string $permission): bool
     {
-        if ($this->isRendszergazda()) {
+        $permissions = [
+            'dolgozo' => ['create_napzaras', 'view_own_napzaras', 'view_beosztas'],
+            'admin' => ['create_napzaras', 'view_napzaras', 'approve_napzaras', 'view_reports', 'manage_beosztas'],
+            'rendszergazda' => ['*'],
+        ];
+
+        if ($this->role->name === 'rendszergazda') {
             return true;
         }
 
-        $permissions = [
-            'dolgozo' => [
-                'create_napzaras',
-                'view_own_napzaras',
-                'view_beosztas',
-            ],
-            'admin' => [
-                'create_napzaras',
-                'view_napzaras',
-                'approve_napzaras',
-                'view_reports',
-                'manage_beosztas',
-            ],
-        ];
-
-        return in_array(
-            $permission,
-            $permissions[$this->role?->name] ?? [],
-            true
-        );
-    }
-
-    /* =========================
-     |  BÉR LOGIKA (KRITIKUS RÉSZ)
-     ========================= */
-
-    public function isNapiBeres(): bool
-    {
-        return $this->ber_tipus === 'napi';
-    }
-
-    public function isFixBeres(): bool
-    {
-        return $this->ber_tipus === 'fix';
-    }
-
-    /**
-     * Fix dolgozó napi díja (egyszerűsített számítás)
-     */
-    public function napiFixBer(): ?float
-    {
-        if ($this->isFixBeres() && $this->alap_ber) {
-            return round($this->alap_ber / 30, 2);
-        }
-
-        return null;
-    }
-
-    /**
-     * Napzáráskor ténylegesen fizetendő összeg
-     */
-    public function szamoltNapiBer(?float $manualOsszeg = null): float
-    {
-        if ($this->isFixBeres()) {
-            return $this->napiFixBer() ?? 0;
-        }
-
-        return $manualOsszeg ?? 0;
+        return in_array($permission, $permissions[$this->role->name] ?? []);
     }
 }

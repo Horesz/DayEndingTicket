@@ -4,8 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-
 
 class Napzaras extends Model
 {
@@ -22,6 +20,9 @@ class Napzaras extends Model
         'napi_ber',
         'koltsegek',
         'megjegyzes',
+        'dolgozok_json',        // ÚJ - dolgozók JSON-ben
+        'nav_foto_link',        // ÚJ - NAV fotó link
+        'terminal_foto_link',   // ÚJ - Terminál fotó link
         'statusz',
         'jovahagyta_user_id',
         'jovahagyva_at',
@@ -29,28 +30,21 @@ class Napzaras extends Model
     ];
 
     protected $casts = [
-        'datum' => 'date',
-        'kartya_bevetel' => 'decimal:2',
-        'keszpenz_bevetel' => 'decimal:2',
-        'online_bevetel' => 'decimal:2',
-        'egyeb_bevetel' => 'decimal:2',
-        'napi_ber' => 'decimal:2',
-        'koltsegek' => 'decimal:2',
-        'jovahagyva_at' => 'datetime',
-    ];
+    'datum' => 'date',  // ← Ez kell!
+    'kartya_bevetel' => 'decimal:2',
+    'keszpenz_bevetel' => 'decimal:2',
+    'online_bevetel' => 'decimal:2',
+    'egyeb_bevetel' => 'decimal:2',
+    'napi_ber' => 'decimal:2',
+    'koltsegek' => 'decimal:2',
+    'jovahagyva_at' => 'datetime',
+    'dolgozok_json' => 'array',
+];
 
-public function dolgozok()
-{
-    return $this->belongsToMany(User::class, 'napzaras_dolgozo')
-                ->withPivot('napi_ber', 'megjegyzes')
-                ->withTimestamps();
-}
+    // ===================================
+    // KAPCSOLATOK
+    // ===================================
 
-// Összesített napi bér (a pivot táblából számolva)
-public function getNapiBerAttribute()
-{
-    return $this->dolgozok->sum('pivot.napi_ber');
-}
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
@@ -66,7 +60,10 @@ public function getNapiBerAttribute()
         return $this->belongsTo(User::class, 'jovahagyta_user_id');
     }
 
-    // Számított mezők
+    // ===================================
+    // SZÁMÍTOTT MEZŐK (ACCESSORS)
+    // ===================================
+
     public function getOsszBevetelAttribute(): float
     {
         return $this->kartya_bevetel + $this->keszpenz_bevetel + 
@@ -81,5 +78,14 @@ public function getNapiBerAttribute()
     public function getEredmenyAttribute(): float
     {
         return $this->ossz_bevetel - $this->ossz_kiadas;
+    }
+
+    // ===================================
+    // DOLGOZÓK JSON-ből
+    // ===================================
+
+    public function getDolgozokListaAttribute(): array
+    {
+        return $this->dolgozok_json ?? [];
     }
 }

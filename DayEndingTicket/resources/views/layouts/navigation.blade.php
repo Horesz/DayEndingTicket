@@ -32,13 +32,25 @@
                             Riportok
                         </x-nav-link>
                     @endif
+
+                    {{-- ÚJ: User kezelés --}}
+                    @if(auth()->user()->isAdmin() || auth()->user()->isRendszergazda())
+                        <x-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">
+                            <span class="flex items-center">
+                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                                </svg>
+                                Dolgozók
+                            </span>
+                        </x-nav-link>
+                    @endif
                 </div>
             </div>
 
             <!-- Settings Dropdown -->
             <div class="hidden sm:flex sm:items-center sm:ml-6">
                 <!-- User Info -->
-                <div class="mr-3 text-sm text-gray-700">
+                <div class="mr-3 text-right text-sm text-gray-700">
                     <div class="font-medium">{{ Auth::user()->name }}</div>
                     <div class="text-xs text-gray-500">{{ Auth::user()->role->display_name }}</div>
                     @if(Auth::user()->fiok)
@@ -49,8 +61,9 @@
                 <x-dropdown align="right" width="48">
                     <x-slot name="trigger">
                         <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150">
-                            <div>{{ Auth::user()->name }}</div>
-
+                            <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                            </svg>
                             <div class="ml-1">
                                 <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
@@ -60,9 +73,29 @@
                     </x-slot>
 
                     <x-slot name="content">
+                        {{-- ÚJ: User kezelés dropdown-ban is --}}
+                        @if(auth()->user()->isAdmin() || auth()->user()->isRendszergazda())
+                            <x-dropdown-link :href="route('admin.users.index')">
+                                <span class="flex items-center">
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                                    </svg>
+                                    Dolgozók kezelése
+                                </span>
+                            </x-dropdown-link>
+                            <div class="border-t border-gray-100"></div>
+                        @endif
+
                         <x-dropdown-link :href="route('profile.edit')">
-                            Profilom
+                            <span class="flex items-center">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                </svg>
+                                Profilom
+                            </span>
                         </x-dropdown-link>
+
+                        <div class="border-t border-gray-100"></div>
 
                         <!-- Authentication -->
                         <form method="POST" action="{{ route('logout') }}">
@@ -70,7 +103,12 @@
                             <x-dropdown-link :href="route('logout')"
                                     onclick="event.preventDefault();
                                                 this.closest('form').submit();">
-                                Kijelentkezés
+                                <span class="flex items-center text-red-600">
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                                    </svg>
+                                    Kijelentkezés
+                                </span>
                             </x-dropdown-link>
                         </form>
                     </x-slot>
@@ -109,6 +147,13 @@
                     Riportok
                 </x-responsive-nav-link>
             @endif
+
+            {{-- ÚJ: User kezelés mobilon --}}
+            @if(auth()->user()->isAdmin() || auth()->user()->isRendszergazda())
+                <x-responsive-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">
+                    Dolgozók kezelése
+                </x-responsive-nav-link>
+            @endif
         </div>
 
         <!-- Responsive Settings Options -->
@@ -116,6 +161,7 @@
             <div class="px-4">
                 <div class="font-medium text-base text-gray-800">{{ Auth::user()->name }}</div>
                 <div class="font-medium text-sm text-gray-500">{{ Auth::user()->email }}</div>
+                <div class="font-medium text-xs text-gray-400">{{ Auth::user()->role->display_name }}</div>
             </div>
 
             <div class="mt-3 space-y-1">
