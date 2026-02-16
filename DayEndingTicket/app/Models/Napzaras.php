@@ -10,31 +10,36 @@ class Napzaras extends Model
     protected $table = 'napzarasok';
     
     protected $fillable = [
-        'user_id',
-        'fiok_id',
-        'datum',
-        'kartya_bevetel',
-        'keszpenz_bevetel',
-        'online_bevetel',
-        'egyeb_bevetel',
-        'napi_ber',
-        'koltsegek',
-        'megjegyzes',
-        'dolgozok_json',        // ÚJ - dolgozók JSON-ben
-        'nav_foto_link',        // ÚJ - NAV fotó link
-        'terminal_foto_link',   // ÚJ - Terminál fotó link
-        'statusz',
-        'jovahagyta_user_id',
-        'jovahagyva_at',
-        'jovahagyas_megjegyzes'
-    ];
+    'user_id',
+    'fiok_id',
+    'munkakor_id',
+    'datum',
+    'kartya_bevetel',
+    'keszpenz_bevetel',
+    'online_bevetel',
+    'egyeb_bevetel',
+    'zacskos_keszpenz',      // ÚJ
+    'napi_ber',
+    'koltsegek',
+    'megjegyzes',
+    'dolgozok_json',
+    'nav_foto_link',
+    'nav_kep_path',          // ÚJ
+    'terminal_foto_link',
+    'terminal_kep_path',     // ÚJ
+    'statusz',
+    'jovahagyta_user_id',
+    'jovahagyva_at',
+    'jovahagyas_megjegyzes'
+];
 
-    protected $casts = [
-    'datum' => 'date',  // ← Ez kell!
+protected $casts = [
+    'datum' => 'date',
     'kartya_bevetel' => 'decimal:2',
     'keszpenz_bevetel' => 'decimal:2',
     'online_bevetel' => 'decimal:2',
     'egyeb_bevetel' => 'decimal:2',
+    'zacskos_keszpenz' => 'decimal:2',  // ÚJ
     'napi_ber' => 'decimal:2',
     'koltsegek' => 'decimal:2',
     'jovahagyva_at' => 'datetime',
@@ -49,7 +54,10 @@ class Napzaras extends Model
     {
         return $this->belongsTo(User::class);
     }
-
+public function munkakor(): BelongsTo
+{
+    return $this->belongsTo(Munkakor::class);
+}
     public function fiok(): BelongsTo
     {
         return $this->belongsTo(Fiok::class);

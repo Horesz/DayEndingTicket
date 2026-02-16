@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Role;
 use App\Models\Fiok;
+use App\Models\Munkakor;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -12,7 +13,9 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        // Szerepkörök létrehozása (duplikáció elkerülése)
+        // ================================
+        // SZEREPKÖRÖK
+        // ================================
         $rendszergazda = Role::firstOrCreate(
             ['name' => 'rendszergazda'],
             ['display_name' => 'Rendszergazda']
@@ -28,98 +31,87 @@ class DatabaseSeeder extends Seeder
             ['display_name' => 'Dolgozó']
         );
 
-        // Fiókok létrehozása
-        $fiok1 = Fiok::firstOrCreate(
-            ['kod' => 'F001'],
+        // ================================
+        // TELEPHELY (Cinema Bridge)
+        // ================================
+        $cinemaBridge = Fiok::firstOrCreate(
+            ['kod' => 'CINEMA_BRIDGE'],
             [
-                'nev' => 'Központi Fiók',
-                'cim' => 'Budapest, Fő utca 1.',
+                'nev' => 'Cinema Bridge',
+                'cim' => 'Budapest, Margit körút 55.',
                 'aktiv' => true
             ]
         );
 
-        $fiok2 = Fiok::firstOrCreate(
-            ['kod' => 'F002'],
-            [
-                'nev' => 'Belváros Fiók',
-                'cim' => 'Budapest, Váci utca 10.',
-                'aktiv' => true
-            ]
+        // ================================
+        // MUNKAKÖRÖK (Kasszák)
+        // ================================
+        $bufePenztar = Munkakor::firstOrCreate(
+            ['kod' => 'BUFE_PENZTAR', 'fiok_id' => $cinemaBridge->id],
+            ['nev' => 'Bufé pénztár', 'aktiv' => true]
         );
 
-        // Rendszergazda felhasználó
+        $jegyPenztar = Munkakor::firstOrCreate(
+            ['kod' => 'JEGY_PENZTAR', 'fiok_id' => $cinemaBridge->id],
+            ['nev' => 'Jegy pénztár', 'aktiv' => true]
+        );
+
+        // ================================
+        // RENDSZERGAZDA (nincs fiókhoz kötve)
+        // ================================
         User::firstOrCreate(
-            ['email' => 'admin@rendszer.hu'],
+            ['email' => 'admin@cinemabridge.hu'],
             [
                 'name' => 'Rendszergazda',
                 'password' => Hash::make('password'),
                 'role_id' => $rendszergazda->id,
-                'fiok_id' => null,
+                'fiok_id' => null, // Rendszergazda mindent lát
                 'ber_tipus' => 'fix',
                 'alap_ber' => null,
             ]
         );
 
-        // Manager felhasználó
+        // ================================
+        // MANAGER (Cinema Bridge)
+        // ================================
         User::firstOrCreate(
-            ['email' => 'manager@rendszer.hu'],
+            ['email' => 'manager@cinemabridge.hu'],
             [
-                'name' => 'Kovács János',
+                'name' => 'Kovács János (Manager)',
                 'password' => Hash::make('password'),
                 'role_id' => $admin->id,
-                'fiok_id' => $fiok1->id,
+                'fiok_id' => $cinemaBridge->id,
                 'ber_tipus' => 'fix',
                 'alap_ber' => 500000,
             ]
         );
 
-        // Dolgozó felhasználók
-        User::firstOrCreate(
-            ['email' => 'anna@rendszer.hu'],
-            [
-                'name' => 'Nagy Anna',
-                'password' => Hash::make('password'),
-                'role_id' => $dolgozo->id,
-                'fiok_id' => $fiok1->id,
-                'ber_tipus' => 'napi',
-                'alap_ber' => null,
-            ]
-        );
-
-        User::firstOrCreate(
-            ['email' => 'peter@rendszer.hu'],
-            [
-                'name' => 'Szabó Péter',
-                'password' => Hash::make('password'),
-                'role_id' => $dolgozo->id,
-                'fiok_id' => $fiok2->id,
-                'ber_tipus' => 'fix',
-                'alap_ber' => 300000,
-            ]
-        );
-
-        // Több dolgozó a táblázathoz (mint a képen)
-        $dolgozokAdatok = [
-            ['Anita', 'anita@rendszer.hu', $fiok1->id, 'napi'],
-            ['Noémi', 'noemi@rendszer.hu', $fiok1->id, 'napi'],
-            ['Szabolcs', 'szabolcs@rendszer.hu', $fiok1->id, 'napi'],
-            ['Tomi', 'tomi@rendszer.hu', $fiok1->id, 'napi'],
-            ['Atis', 'atis@rendszer.hu', $fiok2->id, 'napi'],
-            ['Kata', 'kata@rendszer.hu', $fiok2->id, 'napi'],
-            ['Alexandra', 'alexandra@rendszer.hu', $fiok2->id, 'fix'],
-            ['Barni', 'barni@rendszer.hu', $fiok1->id, 'napi'],
-            ['Martin', 'martin@rendszer.hu', $fiok1->id, 'napi'],
-            ['Betti', 'betti@rendszer.hu', $fiok2->id, 'napi'],
+        // ================================
+        // DOLGOZÓK (Cinema Bridge)
+        // ================================
+        $dolgozok = [
+            ['Anita', 'anita@cinemabridge.hu', 'napi'],
+            ['Noémi', 'noemi@cinemabridge.hu', 'napi'],
+            ['Szabolcs', 'szabolcs@cinemabridge.hu', 'napi'],
+            ['Tomi', 'tomi@cinemabridge.hu', 'napi'],
+            ['Barni', 'barni@cinemabridge.hu', 'napi'],
+            ['Martin', 'martin@cinemabridge.hu', 'napi'],
+            ['Atis', 'atis@cinemabridge.hu', 'napi'],
+            ['Kata', 'kata@cinemabridge.hu', 'napi'],
+            ['Alexandra', 'alexandra@cinemabridge.hu', 'fix'],
+            ['Betti', 'betti@cinemabridge.hu', 'napi'],
+            ['Réka', 'reka@cinemabridge.hu', 'napi'],
+            ['Dávid', 'david@cinemabridge.hu', 'napi'],
         ];
 
-        foreach ($dolgozokAdatok as [$nev, $email, $fiokId, $berTipus]) {
+        foreach ($dolgozok as [$nev, $email, $berTipus]) {
             User::firstOrCreate(
                 ['email' => $email],
                 [
                     'name' => $nev,
                     'password' => Hash::make('password'),
                     'role_id' => $dolgozo->id,
-                    'fiok_id' => $fiokId,
+                    'fiok_id' => $cinemaBridge->id, // Minden dolgozó Cinema Bridge-hez tartozik
                     'ber_tipus' => $berTipus,
                     'alap_ber' => $berTipus === 'fix' ? 280000 : null,
                 ]

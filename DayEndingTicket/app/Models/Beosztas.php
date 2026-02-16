@@ -17,6 +17,7 @@ class Beosztas extends Model
         'kezdes',
         'befejezes',
         'megjegyzes',
+        'munkakor_id'
     ];
 
     protected $casts = [
@@ -27,7 +28,10 @@ class Beosztas extends Model
     {
         return $this->belongsTo(User::class);
     }
-
+public function munkakor(): BelongsTo
+{
+    return $this->belongsTo(Munkakor::class);
+}
     public function fiok(): BelongsTo
     {
         return $this->belongsTo(Fiok::class);

@@ -23,8 +23,6 @@ return new class extends Migration
             $table->text('megjegyzes')->nullable();
 
             $table->timestamps();
-
-            $table->unique(['napzaras_id', 'user_id']);
         });
     }
 

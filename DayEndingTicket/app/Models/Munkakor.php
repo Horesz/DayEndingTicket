@@ -3,31 +3,29 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Fiok extends Model
+class Munkakor extends Model
 {
-    protected $table = 'fiokok';
+    protected $table = 'munkakorok';
     
     protected $fillable = [
         'nev',
-        'cim',
         'kod',
-        'aktiv'
+        'fiok_id',
+        'aktiv',
     ];
 
     protected $casts = [
         'aktiv' => 'boolean',
     ];
 
-    public function users(): HasMany
+    public function fiok(): BelongsTo
     {
-        return $this->hasMany(User::class);
+        return $this->belongsTo(Fiok::class);
     }
-public function munkakorok(): HasMany
-{
-    return $this->hasMany(Munkakor::class);
-}
+
     public function napzarasok(): HasMany
     {
         return $this->hasMany(Napzaras::class);

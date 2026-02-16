@@ -13,7 +13,8 @@
                     <h1 class="text-3xl font-bold">Napzárás részletei</h1>
                     <p class="mt-2 text-indigo-100">
                         {{ $napzaras->datum ? $napzaras->datum->format('Y. m. d. (l)') : 'Nincs dátum' }} • 
-                        {{ $napzaras->fiok->nev ?? 'Nincs fiók' }}
+                        {{ $napzaras->fiok->nev ?? 'Nincs fiók' }} • 
+                        {{ $napzaras->munkakor->nev ?? 'Nincs munkakör' }}
                     </p>
                 </div>
                 <div class="text-right">
@@ -45,8 +46,12 @@
                 <h2 class="text-xl font-semibold mb-4">Alapadatok</h2>
                 <dl class="grid grid-cols-2 gap-4">
                     <div>
-                        <dt class="text-sm font-medium text-gray-500">Fiók</dt>
+                        <dt class="text-sm font-medium text-gray-500">Telephely</dt>
                         <dd class="mt-1 text-base font-semibold text-gray-900">{{ $napzaras->fiok->nev ?? 'N/A' }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Munkakör / Kassza</dt>
+                        <dd class="mt-1 text-base font-semibold text-indigo-700">{{ $napzaras->munkakor->nev ?? 'N/A' }}</dd>
                     </div>
                     <div>
                         <dt class="text-sm font-medium text-gray-500">Dátum</dt>
@@ -91,13 +96,28 @@
                         <dt class="font-bold text-gray-900">Összes bevétel</dt>
                         <dd class="font-bold text-green-700 text-xl">{{ number_format($napzaras->ossz_bevetel ?? 0, 0, ',', ' ') }} Ft</dd>
                     </div>
+                    
+                    @if($napzaras->zacskos_keszpenz > 0)
+                    <div class="flex justify-between pt-3 border-t bg-yellow-50 -mx-6 px-6 py-3 mt-3">
+                        <dt class="text-yellow-800 font-medium">💰 Zacskóba helyezett készpénz</dt>
+                        <dd class="font-bold text-yellow-800">{{ number_format($napzaras->zacskos_keszpenz ?? 0, 0, ',', ' ') }} Ft</dd>
+                    </div>
+                    <p class="text-xs text-gray-500 italic">* Ez az összeg informatív, nem számít bele az eredménybe</p>
+                    @endif
                 </dl>
             </div>
 
             <!-- Napi bérek -->
             <div class="bg-white rounded-xl shadow p-6">
                 <h2 class="text-xl font-semibold mb-4 text-red-700">Napi bérek</h2>
-                @if(!empty($napzaras->dolgozok_json) && count($napzaras->dolgozok_json) > 0)
+                
+                @php
+                    $dolgozok = is_string($napzaras->dolgozok_json) 
+                        ? json_decode($napzaras->dolgozok_json, true) 
+                        : $napzaras->dolgozok_json;
+                @endphp
+
+                @if(!empty($dolgozok) && is_array($dolgozok) && count($dolgozok) > 0)
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead>
                             <tr>
@@ -106,7 +126,7 @@
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
-                            @foreach($napzaras->dolgozok_json as $dolgozo)
+                            @foreach($dolgozok as $dolgozo)
                                 <tr>
                                     <td class="py-2 text-gray-900">{{ $dolgozo['nev'] ?? 'N/A' }}</td>
                                     <td class="py-2 text-right font-semibold text-gray-900">
@@ -135,27 +155,55 @@
             </div>
 
             <!-- Dokumentumok -->
-            @if($napzaras->nav_foto_link || $napzaras->terminal_foto_link)
+            @if($napzaras->nav_foto_link || $napzaras->nav_kep_path || $napzaras->terminal_foto_link || $napzaras->terminal_kep_path)
             <div class="bg-white rounded-xl shadow p-6">
                 <h2 class="text-xl font-semibold mb-4">Dokumentumok</h2>
-                <div class="space-y-3">
-                    @if($napzaras->nav_foto_link)
-                        <div>
-                            <p class="text-sm text-gray-600 mb-1">📄 NAV-os blokk</p>
-                            <a href="{{ $napzaras->nav_foto_link }}" target="_blank" 
-                               class="text-indigo-600 hover:text-indigo-800 underline text-sm break-all">
-                                {{ $napzaras->nav_foto_link }}
-                            </a>
+                <div class="space-y-4">
+                    <!-- NAV -->
+                    @if($napzaras->nav_foto_link || $napzaras->nav_kep_path)
+                        <div class="border-b pb-4">
+                            <p class="text-sm font-medium text-gray-700 mb-2">📄 NAV-os blokk</p>
+                            
+                            @if($napzaras->nav_foto_link)
+                                <a href="{{ $napzaras->nav_foto_link }}" target="_blank" 
+                                   class="text-indigo-600 hover:text-indigo-800 underline text-sm break-all block mb-2">
+                                    Google Photos link →
+                                </a>
+                            @endif
+                            
+                            @if($napzaras->nav_kep_path)
+                                <div class="mt-2">
+                                    <img src="{{ asset('storage/' . $napzaras->nav_kep_path) }}" 
+                                         alt="NAV blokk" 
+                                         class="max-w-full h-auto rounded-lg border shadow-sm cursor-pointer hover:shadow-lg transition"
+                                         onclick="window.open('{{ asset('storage/' . $napzaras->nav_kep_path) }}', '_blank')">
+                                    <p class="text-xs text-gray-500 mt-1">Kattints a képre a nagyításhoz</p>
+                                </div>
+                            @endif
                         </div>
                     @endif
                     
-                    @if($napzaras->terminal_foto_link)
+                    <!-- Terminál -->
+                    @if($napzaras->terminal_foto_link || $napzaras->terminal_kep_path)
                         <div>
-                            <p class="text-sm text-gray-600 mb-1">💳 Terminál</p>
-                            <a href="{{ $napzaras->terminal_foto_link }}" target="_blank" 
-                               class="text-indigo-600 hover:text-indigo-800 underline text-sm break-all">
-                                {{ $napzaras->terminal_foto_link }}
-                            </a>
+                            <p class="text-sm font-medium text-gray-700 mb-2">💳 Terminál</p>
+                            
+                            @if($napzaras->terminal_foto_link)
+                                <a href="{{ $napzaras->terminal_foto_link }}" target="_blank" 
+                                   class="text-indigo-600 hover:text-indigo-800 underline text-sm break-all block mb-2">
+                                    Google Photos link →
+                                </a>
+                            @endif
+                            
+                            @if($napzaras->terminal_kep_path)
+                                <div class="mt-2">
+                                    <img src="{{ asset('storage/' . $napzaras->terminal_kep_path) }}" 
+                                         alt="Terminál" 
+                                         class="max-w-full h-auto rounded-lg border shadow-sm cursor-pointer hover:shadow-lg transition"
+                                         onclick="window.open('{{ asset('storage/' . $napzaras->terminal_kep_path) }}', '_blank')">
+                                    <p class="text-xs text-gray-500 mt-1">Kattints a képre a nagyításhoz</p>
+                                </div>
+                            @endif
                         </div>
                     @endif
                 </div>
@@ -193,6 +241,16 @@
                             {{ number_format($napzaras->eredmeny ?? 0, 0, ',', ' ') }} Ft
                         </dd>
                     </div>
+                    
+                    @if($napzaras->zacskos_keszpenz > 0)
+                    <div class="pt-3 border-t bg-yellow-50 -mx-6 px-6 py-3 mt-3">
+                        <div class="flex justify-between">
+                            <dt class="text-xs text-yellow-700">Zacskós készpénz</dt>
+                            <dd class="text-sm font-bold text-yellow-800">{{ number_format($napzaras->zacskos_keszpenz, 0, ',', ' ') }} Ft</dd>
+                        </div>
+                        <p class="text-xs text-yellow-600 italic mt-1">* Informatív, nincs beleszámolva</p>
+                    </div>
+                    @endif
                 </dl>
             </div>
 

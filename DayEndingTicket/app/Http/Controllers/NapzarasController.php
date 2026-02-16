@@ -6,6 +6,7 @@ use App\Models\Napzaras;
 use App\Models\Fiok;
 use Illuminate\Http\Request;
 use App\Models\User;
+use App\Models\Munkakor;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
@@ -14,7 +15,7 @@ class NapzarasController extends Controller
     public function index(Request $request)
     {
         $user = auth()->user();
-        $query = Napzaras::with(['user', 'fiok', 'jovahagyo']);
+        $query = Napzaras::with(['user', 'fiok', 'munkakor', 'jovahagyo']);
 
         // Dolgozó csak sajátját látja
         if ($user->isDolgozo()) {
@@ -49,211 +50,234 @@ class NapzarasController extends Controller
         return view('napzarasok.index', compact('napzarasok', 'fiokok'));
     }
 
-   public function create()
-{
-    $user = auth()->user();
-    
-    // Dolgozó csak saját fiókjához tud napzárást készíteni
-    $fiokok = $user->isDolgozo() 
-        ? Fiok::where('id', $user->fiok_id)->get()
-        : Fiok::where('aktiv', true)->get();
+    public function create()
+    {
+        $user = auth()->user();
+        
+        $fiokok = $user->isDolgozo() 
+            ? Fiok::where('id', $user->fiok_id)->get()
+            : Fiok::where('aktiv', true)->get();
 
-    // Napi bérű dolgozók lekérése
-    $napi_beru_dolgozok = User::with('fiok')
-        ->where('ber_tipus', 'napi')
-        ->whereHas('role', function($query) {
-            $query->where('name', 'dolgozo');
-        })
-        ->when($user->isAdmin() && $user->fiok_id, function($query) use ($user) {
-            // Admin csak saját fiókjának dolgozóit látja
-            return $query->where('fiok_id', $user->fiok_id);
-        })
-        ->orderBy('name')
-        ->get();
+        // Munkakörök lekérése
+        $munkakorok = Munkakor::with('fiok')
+            ->where('aktiv', true)
+            ->when($user->isDolgozo() && $user->fiok_id, function($query) use ($user) {
+                return $query->where('fiok_id', $user->fiok_id);
+            })
+            ->get();
 
-    return view('napzarasok.create', compact('fiokok', 'napi_beru_dolgozok'));
-}
+        return view('napzarasok.create', compact('fiokok', 'munkakorok'));
+    }
 
     public function store(Request $request)
-{
-    $user = auth()->user();
+    {
+        $user = auth()->user();
 
-    $validated = $request->validate([
-        'fiok_id'           => 'required|exists:fiokok,id',
-        'datum'             => 'required|date|before_or_equal:today',
-        'kartya_bevetel'    => 'required|numeric|min:0',
-        'keszpenz_bevetel'  => 'required|numeric|min:0',
-        'online_bevetel'    => 'nullable|numeric|min:0',
-        'egyeb_bevetel'     => 'nullable|numeric|min:0',
-        'koltsegek'         => 'nullable|numeric|min:0',
-        'megjegyzes'        => 'nullable|string|max:1000',
-        'nav_foto_link'     => 'nullable|url',
-        'terminal_foto_link'=> 'nullable|url',
-        
-        // Dolgozók
-        'dolgozo_nev'       => 'nullable|array',
-        'dolgozo_nev.*'     => 'string|max:255',
-        'dolgozo_ber'       => 'nullable|array',
-        'dolgozo_ber.*'     => 'numeric|min:0',
-    ]);
+        $validated = $request->validate([
+            'fiok_id'           => 'required|exists:fiokok,id',
+            'munkakor_id'       => 'required|exists:munkakorok,id',
+            'datum'             => 'required|date|before_or_equal:today',
+            'kartya_bevetel'    => 'required|numeric|min:0',
+            'keszpenz_bevetel'  => 'required|numeric|min:0',
+            'online_bevetel'    => 'nullable|numeric|min:0',
+            'egyeb_bevetel'     => 'nullable|numeric|min:0',
+            'zacskos_keszpenz'  => 'nullable|numeric|min:0',
+            'koltsegek'         => 'nullable|numeric|min:0',
+            'megjegyzes'        => 'nullable|string|max:1000',
+            'nav_foto_link'     => 'nullable|url',
+            'terminal_foto_link'=> 'nullable|url',
+            'nav_kep'           => 'nullable|image|mimes:jpeg,png,jpg|max:5120',
+            'terminal_kep'      => 'nullable|image|mimes:jpeg,png,jpg|max:5120',
+            'dolgozo_nev'       => 'nullable|array',
+            'dolgozo_nev.*'     => 'string|max:255',
+            'dolgozo_ber'       => 'nullable|array',
+            'dolgozo_ber.*'     => 'numeric|min:0',
+        ]);
 
-    // Jogosultság ellenőrzés
-    if ($user->isDolgozo() && $validated['fiok_id'] != $user->fiok_id) {
-        abort(403);
-    }
+        // Jogosultság
+        if ($user->isDolgozo() && $validated['fiok_id'] != $user->fiok_id) {
+            abort(403);
+        }
 
-    // Létezés ellenőrzés
-    $exists = Napzaras::where('fiok_id', $validated['fiok_id'])
-        ->where('datum', $validated['datum'])
-        ->exists();
+        // Duplikáció ellenőrzés
+        $exists = Napzaras::where('fiok_id', $validated['fiok_id'])
+            ->where('munkakor_id', $validated['munkakor_id'])
+            ->where('datum', $validated['datum'])
+            ->exists();
 
-    if ($exists) {
-        return back()->withErrors(['datum' => 'Erre a napra már létezik napzárás.'])->withInput();
-    }
+        if ($exists) {
+            $munkakor = Munkakor::find($validated['munkakor_id']);
+            return back()->withErrors([
+                'munkakor_id' => "Erre a napra a(z) {$munkakor->nev} munkakörre már létezik napzárás."
+            ])->withInput();
+        }
 
-    // Napi bérek összesítése
-    $osszesNapiBer = 0;
-    if (!empty($validated['dolgozo_ber'])) {
-        $osszesNapiBer = array_sum($validated['dolgozo_ber']);
-    }
+        // Képfeltöltés - NAV
+        $navKepPath = null;
+        if ($request->hasFile('nav_kep')) {
+            $navKepPath = $request->file('nav_kep')->store('napzaras/nav', 'public');
+        }
 
-    // Dolgozók adatainak JSON-be mentése
-    $dolgozokJson = [];
-    if (!empty($validated['dolgozo_nev'])) {
-        foreach ($validated['dolgozo_nev'] as $index => $nev) {
-            if (!empty($nev) && !empty($validated['dolgozo_ber'][$index])) {
-                $dolgozokJson[] = [
-                    'nev' => $nev,
-                    'ber' => $validated['dolgozo_ber'][$index]
-                ];
+        // Képfeltöltés - Terminál
+        $terminalKepPath = null;
+        if ($request->hasFile('terminal_kep')) {
+            $terminalKepPath = $request->file('terminal_kep')->store('napzaras/terminal', 'public');
+        }
+
+        // Napi bérek
+        $osszesNapiBer = 0;
+        if (!empty($validated['dolgozo_ber'])) {
+            $osszesNapiBer = array_sum($validated['dolgozo_ber']);
+        }
+
+        $dolgozokJson = [];
+        if (!empty($validated['dolgozo_nev'])) {
+            foreach ($validated['dolgozo_nev'] as $index => $nev) {
+                if (!empty($nev) && !empty($validated['dolgozo_ber'][$index])) {
+                    $dolgozokJson[] = [
+                        'nev' => $nev,
+                        'ber' => $validated['dolgozo_ber'][$index]
+                    ];
+                }
             }
         }
+
+        Napzaras::create([
+            'user_id'            => $user->id,
+            'fiok_id'            => $validated['fiok_id'],
+            'munkakor_id'        => $validated['munkakor_id'],
+            'datum'              => $validated['datum'],
+            'kartya_bevetel'     => $validated['kartya_bevetel'],
+            'keszpenz_bevetel'   => $validated['keszpenz_bevetel'],
+            'online_bevetel'     => $validated['online_bevetel'] ?? 0,
+            'egyeb_bevetel'      => $validated['egyeb_bevetel'] ?? 0,
+            'zacskos_keszpenz'   => $validated['zacskos_keszpenz'] ?? 0,
+            'napi_ber'           => $osszesNapiBer,
+            'koltsegek'          => $validated['koltsegek'] ?? 0,
+            'megjegyzes'         => $validated['megjegyzes'],
+            'nav_foto_link'      => $validated['nav_foto_link'],
+            'nav_kep_path'       => $navKepPath,
+            'terminal_foto_link' => $validated['terminal_foto_link'],
+            'terminal_kep_path'  => $terminalKepPath,
+            'dolgozok_json'      => json_encode($dolgozokJson),
+        ]);
+
+        return redirect()->route('napzarasok.index')
+            ->with('success', 'Napzárás sikeresen rögzítve!');
     }
-
-    // Napzárás létrehozása
-    Napzaras::create([
-        'user_id'            => $user->id,
-        'fiok_id'            => $validated['fiok_id'],
-        'datum'              => $validated['datum'],
-        'kartya_bevetel'     => $validated['kartya_bevetel'],
-        'keszpenz_bevetel'   => $validated['keszpenz_bevetel'],
-        'online_bevetel'     => $validated['online_bevetel'] ?? 0,
-        'egyeb_bevetel'      => $validated['egyeb_bevetel'] ?? 0,
-        'napi_ber'           => $osszesNapiBer,
-        'koltsegek'          => $validated['koltsegek'] ?? 0,
-        'megjegyzes'         => $validated['megjegyzes'],
-        'nav_foto_link'      => $validated['nav_foto_link'],
-        'terminal_foto_link' => $validated['terminal_foto_link'],
-        'dolgozok_json'      => json_encode($dolgozokJson), // ÚJ mező kell hozzá!
-    ]);
-
-    return redirect()->route('napzarasok.index')
-        ->with('success', 'Napzárás sikeresen rögzítve!');
-}
 
     public function show(Napzaras $napzaras)
-{
-    // Policy helyett egyszerű jogosultság ellenőrzés
-    $user = auth()->user();
-    
-    if ($user->isDolgozo() && $napzaras->user_id !== $user->id) {
-        abort(403, 'Nincs jogosultságod megtekinteni ezt a napzárást.');
+    {
+        $user = auth()->user();
+        
+        if ($user->isDolgozo() && $napzaras->user_id !== $user->id) {
+            abort(403);
+        }
+        
+        if ($user->isAdmin() && $user->fiok_id && $napzaras->fiok_id !== $user->fiok_id) {
+            abort(403);
+        }
+        
+        $napzaras->load(['user', 'fiok', 'munkakor', 'jovahagyo']);
+        
+        return view('napzarasok.show', compact('napzaras'));
     }
-    
-    if ($user->isAdmin() && $napzaras->fiok_id !== $user->fiok_id) {
-        abort(403, 'Nincs jogosultságod megtekinteni ezt a napzárást.');
-    }
-    
-    $napzaras->load(['user', 'fiok', 'jovahagyo']);
-    
-    return view('napzarasok.show', compact('napzaras'));
-}
 
     public function edit(Napzaras $napzaras)
-{
-    $user = auth()->user();
-    
-    // Csak pending napzárást lehet szerkeszteni
-    if ($napzaras->statusz !== 'pending') {
-        abort(403, 'Csak függőben lévő napzárást lehet szerkeszteni.');
+    {
+        $user = auth()->user();
+        
+        if ($napzaras->statusz !== 'pending') {
+            abort(403, 'Csak függőben lévő napzárást lehet szerkeszteni.');
+        }
+        
+        if ($napzaras->user_id !== $user->id) {
+            abort(403, 'Csak a saját napzárásodat szerkesztheted.');
+        }
+
+        $fiokok = $user->isDolgozo() 
+            ? Fiok::where('id', $user->fiok_id)->get()
+            : Fiok::where('aktiv', true)->get();
+
+        return view('napzarasok.edit', compact('napzaras', 'fiokok'));
     }
-    
-    // Csak a létrehozó szerkesztheti
-    if ($napzaras->user_id !== $user->id) {
-        abort(403, 'Csak a saját napzárásodat szerkesztheted.');
-    }
-
-    $fiokok = $user->isDolgozo() 
-        ? Fiok::where('id', $user->fiok_id)->get()
-        : Fiok::where('aktiv', true)->get();
-
-    return view('napzarasok.edit', compact('napzaras', 'fiokok'));
-}
-
 
     public function update(Request $request, Napzaras $napzaras)
-{
-    $user = auth()->user();
-    
-    // Jogosultság ellenőrzés
-    if ($napzaras->statusz !== 'pending') {
-        abort(403, 'Csak függőben lévő napzárást lehet módosítani.');
-    }
-    
-    if ($napzaras->user_id !== $user->id) {
-        abort(403, 'Csak a saját napzárásodat módosíthatod.');
-    }
+    {
+        $user = auth()->user();
+        
+        if ($napzaras->statusz !== 'pending') {
+            abort(403, 'Csak függőben lévő napzárást lehet módosítani.');
+        }
+        
+        if ($napzaras->user_id !== $user->id) {
+            abort(403, 'Csak a saját napzárásodat módosíthatod.');
+        }
 
-    $validated = $request->validate([
-        'kartya_bevetel' => 'required|numeric|min:0',
-        'keszpenz_bevetel' => 'required|numeric|min:0',
-        'online_bevetel' => 'nullable|numeric|min:0',
-        'egyeb_bevetel' => 'nullable|numeric|min:0',
-        'koltsegek' => 'nullable|numeric|min:0',
-        'megjegyzes' => 'nullable|string|max:1000',
-        'nav_foto_link' => 'nullable|url',
-        'terminal_foto_link' => 'nullable|url',
-        'dolgozo_nev' => 'nullable|array',
-        'dolgozo_nev.*' => 'string|max:255',
-        'dolgozo_ber' => 'nullable|array',
-        'dolgozo_ber.*' => 'numeric|min:0',
-    ]);
+        $validated = $request->validate([
+            'kartya_bevetel' => 'required|numeric|min:0',
+            'keszpenz_bevetel' => 'required|numeric|min:0',
+            'online_bevetel' => 'nullable|numeric|min:0',
+            'egyeb_bevetel' => 'nullable|numeric|min:0',
+            'zacskos_keszpenz' => 'nullable|numeric|min:0',
+            'koltsegek' => 'nullable|numeric|min:0',
+            'megjegyzes' => 'nullable|string|max:1000',
+            'nav_foto_link' => 'nullable|url',
+            'terminal_foto_link' => 'nullable|url',
+            'nav_kep' => 'nullable|image|mimes:jpeg,png,jpg|max:5120',
+            'terminal_kep' => 'nullable|image|mimes:jpeg,png,jpg|max:5120',
+            'dolgozo_nev' => 'nullable|array',
+            'dolgozo_nev.*' => 'string|max:255',
+            'dolgozo_ber' => 'nullable|array',
+            'dolgozo_ber.*' => 'numeric|min:0',
+        ]);
 
-    // Napi bérek összesítése
-    $osszesNapiBer = 0;
-    if (!empty($validated['dolgozo_ber'])) {
-        $osszesNapiBer = array_sum($validated['dolgozo_ber']);
-    }
+        // Képfeltöltés
+        if ($request->hasFile('nav_kep')) {
+            $validated['nav_kep_path'] = $request->file('nav_kep')->store('napzaras/nav', 'public');
+        }
 
-    // Dolgozók JSON
-    $dolgozokJson = [];
-    if (!empty($validated['dolgozo_nev'])) {
-        foreach ($validated['dolgozo_nev'] as $index => $nev) {
-            if (!empty($nev) && !empty($validated['dolgozo_ber'][$index])) {
-                $dolgozokJson[] = [
-                    'nev' => $nev,
-                    'ber' => $validated['dolgozo_ber'][$index]
-                ];
+        if ($request->hasFile('terminal_kep')) {
+            $validated['terminal_kep_path'] = $request->file('terminal_kep')->store('napzaras/terminal', 'public');
+        }
+
+        // Napi bérek
+        $osszesNapiBer = 0;
+        if (!empty($validated['dolgozo_ber'])) {
+            $osszesNapiBer = array_sum($validated['dolgozo_ber']);
+        }
+
+        $dolgozokJson = [];
+        if (!empty($validated['dolgozo_nev'])) {
+            foreach ($validated['dolgozo_nev'] as $index => $nev) {
+                if (!empty($nev) && !empty($validated['dolgozo_ber'][$index])) {
+                    $dolgozokJson[] = [
+                        'nev' => $nev,
+                        'ber' => $validated['dolgozo_ber'][$index]
+                    ];
+                }
             }
         }
+
+        $napzaras->update([
+            'kartya_bevetel' => $validated['kartya_bevetel'],
+            'keszpenz_bevetel' => $validated['keszpenz_bevetel'],
+            'online_bevetel' => $validated['online_bevetel'] ?? 0,
+            'egyeb_bevetel' => $validated['egyeb_bevetel'] ?? 0,
+            'zacskos_keszpenz' => $validated['zacskos_keszpenz'] ?? 0,
+            'napi_ber' => $osszesNapiBer,
+            'koltsegek' => $validated['koltsegek'] ?? 0,
+            'megjegyzes' => $validated['megjegyzes'],
+            'nav_foto_link' => $validated['nav_foto_link'],
+            'terminal_foto_link' => $validated['terminal_foto_link'],
+            'nav_kep_path' => $validated['nav_kep_path'] ?? $napzaras->nav_kep_path,
+            'terminal_kep_path' => $validated['terminal_kep_path'] ?? $napzaras->terminal_kep_path,
+            'dolgozok_json' => json_encode($dolgozokJson),
+        ]);
+
+        return redirect()->route('napzarasok.show', $napzaras)
+            ->with('success', 'Napzárás sikeresen módosítva!');
     }
-
-    $napzaras->update([
-        'kartya_bevetel' => $validated['kartya_bevetel'],
-        'keszpenz_bevetel' => $validated['keszpenz_bevetel'],
-        'online_bevetel' => $validated['online_bevetel'] ?? 0,
-        'egyeb_bevetel' => $validated['egyeb_bevetel'] ?? 0,
-        'napi_ber' => $osszesNapiBer,
-        'koltsegek' => $validated['koltsegek'] ?? 0,
-        'megjegyzes' => $validated['megjegyzes'],
-        'nav_foto_link' => $validated['nav_foto_link'],
-        'terminal_foto_link' => $validated['terminal_foto_link'],
-        'dolgozok_json' => json_encode($dolgozokJson),
-    ]);
-
-    return redirect()->route('napzarasok.show', $napzaras)
-        ->with('success', 'Napzárás sikeresen módosítva!');
-}
 
     public function approve(Request $request, Napzaras $napzaras)
     {
@@ -271,9 +295,6 @@ class NapzarasController extends Controller
             'jovahagyva_at' => now(),
             'jovahagyas_megjegyzes' => $validated['jovahagyas_megjegyzes'] ?? null,
         ]);
-
-        // Email értesítés
-        // $napzaras->user->notify(new NapzarasApproved($napzaras));
 
         return back()->with('success', 'Napzárás jóváhagyva!');
     }
@@ -295,27 +316,24 @@ class NapzarasController extends Controller
             'jovahagyas_megjegyzes' => $validated['jovahagyas_megjegyzes'],
         ]);
 
-        // Email értesítés
-        // $napzaras->user->notify(new NapzarasRejected($napzaras));
-
         return back()->with('success', 'Napzárás elutasítva!');
     }
+
     public function destroy(Napzaras $napzaras)
-{
-    $user = auth()->user();
-    
-    // Jogosultság ellenőrzés
-    if ($napzaras->statusz !== 'pending') {
-        return back()->with('error', 'Csak függőben lévő napzárás törölhető.');
-    }
-    
-    if ($napzaras->user_id !== $user->id && !$user->isRendszergazda()) {
-        abort(403, 'Nincs jogosultságod törölni ezt a napzárást.');
-    }
+    {
+        $user = auth()->user();
+        
+        if ($napzaras->statusz !== 'pending') {
+            return back()->with('error', 'Csak függőben lévő napzárás törölhető.');
+        }
+        
+        if ($napzaras->user_id !== $user->id && !$user->isRendszergazda()) {
+            abort(403, 'Nincs jogosultságod törölni ezt a napzárást.');
+        }
 
-    $napzaras->delete();
+        $napzaras->delete();
 
-    return redirect()->route('napzarasok.index')
-        ->with('success', 'Napzárás törölve!');
-}
+        return redirect()->route('napzarasok.index')
+            ->with('success', 'Napzárás törölve!');
+    }
 }
