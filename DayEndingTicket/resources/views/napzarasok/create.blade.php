@@ -69,44 +69,69 @@
             </div>
         </div>
 
-        <!-- Bevételek -->
-        <div class="bg-white rounded-xl shadow p-6">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-semibold">Bevételek</h2>
-                <span class="text-sm text-green-600 font-medium">Összesen: <span id="bevetel-osszes">0 Ft</span></span>
-            </div>
-            <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Készpénz *</label>
-                    <input type="number" step="0.01" min="0" name="keszpenz_bevetel" value="0" required
-                           class="block w-full rounded-md border-gray-300 shadow-sm" oninput="updateOsszesBevetel()">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Kártya *</label>
-                    <input type="number" step="0.01" min="0" name="kartya_bevetel" value="0" required
-                           class="block w-full rounded-md border-gray-300 shadow-sm" oninput="updateOsszesBevetel()">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Online</label>
-                    <input type="number" step="0.01" min="0" name="online_bevetel" value="0"
-                           class="block w-full rounded-md border-gray-300 shadow-sm" oninput="updateOsszesBevetel()">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Egyéb</label>
-                    <input type="number" step="0.01" min="0" name="egyeb_bevetel" value="0"
-                           class="block w-full rounded-md border-gray-300 shadow-sm" oninput="updateOsszesBevetel()">
-                </div>
-                <div class="md:col-span-2">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">
-                        💰 Zacskóba helyezett készpénz 
-                        <span class="text-xs text-gray-500">(informatív, nem számít bele az eredménybe)</span>
-                    </label>
-                    <input type="number" step="0.01" min="0" name="zacskos_keszpenz" value="0"
-                           class="block w-full rounded-md border-gray-300 shadow-sm bg-yellow-50">
-                </div>
-            </div>
+       <!-- Bevételek -->
+<div class="bg-white rounded-xl shadow p-6">
+    <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-semibold">Bevételek</h2>
+        <span class="text-sm text-green-600 font-medium">Összesen: <span id="bevetel-osszes">0 Ft</span></span>
+    </div>
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Készpénz *</label>
+            <input type="number" step="0.01" min="0" name="keszpenz_bevetel" value="0" required
+                   class="block w-full rounded-md border-gray-300 shadow-sm" oninput="updateOsszesBevetel()">
         </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Kártya *</label>
+            <input type="number" step="0.01" min="0" name="kartya_bevetel" value="0" required
+                   class="block w-full rounded-md border-gray-300 shadow-sm" oninput="updateOsszesBevetel()">
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Online</label>
+            <input type="number" step="0.01" min="0" name="online_bevetel" value="0"
+                   class="block w-full rounded-md border-gray-300 shadow-sm" oninput="updateOsszesBevetel()">
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Egyéb</label>
+            <input type="number" step="0.01" min="0" name="egyeb_bevetel" value="0"
+                   class="block w-full rounded-md border-gray-300 shadow-sm" oninput="updateOsszesBevetel()">
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">
+                📄 Kimenő számla <span class="text-xs text-green-600">(+bevétel)</span>
+            </label>
+            <input type="number" step="0.01" min="0" name="kimeno_szamla" value="0"
+                   class="block w-full rounded-md border-gray-300 shadow-sm bg-green-50" oninput="updateOsszesBevetel()">
+        </div>
+        <div class="md:col-span-1">
+            <label class="block text-sm font-medium text-gray-700 mb-1">
+                💰 Zacskóba helyezett 
+                <span class="text-xs text-gray-500">(info)</span>
+            </label>
+            <input type="number" step="0.01" min="0" name="zacskos_keszpenz" value="0"
+                   class="block w-full rounded-md border-gray-300 shadow-sm bg-yellow-50">
+        </div>
+    </div>
+</div>
 
+<!-- Egyéb költségek -->
+<div class="bg-white rounded-xl shadow p-6">
+    <h2 class="text-xl font-semibold mb-4">Kiadások</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Egyéb kiadások (Ft)</label>
+            <input type="number" step="0.01" min="0" name="koltsegek" value="0"
+                   class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">
+                📄 Bejövő számla <span class="text-xs text-red-600">(pl. tisztítószerek, -kiadás)</span>
+            </label>
+            <input type="number" step="0.01" min="0" name="bejovo_szamla" value="0"
+                   class="block w-full rounded-md border-gray-300 shadow-sm bg-red-50">
+        </div>
+    </div>
+</div>
         <!-- Napi bérek -->
         <div class="bg-white rounded-xl shadow p-6">
             <div class="flex justify-between items-center mb-4">

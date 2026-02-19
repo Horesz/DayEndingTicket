@@ -73,40 +73,72 @@
             </div>
 
             <!-- Bevételek -->
-            <div class="bg-white rounded-xl shadow p-6">
-                <h2 class="text-xl font-semibold mb-4 text-green-700">Bevételek</h2>
-                <dl class="space-y-3">
-                    <div class="flex justify-between">
-                        <dt class="text-gray-600">Készpénz</dt>
-                        <dd class="font-semibold text-gray-900">{{ number_format($napzaras->keszpenz_bevetel ?? 0, 0, ',', ' ') }} Ft</dd>
-                    </div>
-                    <div class="flex justify-between">
-                        <dt class="text-gray-600">Kártya</dt>
-                        <dd class="font-semibold text-gray-900">{{ number_format($napzaras->kartya_bevetel ?? 0, 0, ',', ' ') }} Ft</dd>
-                    </div>
-                    <div class="flex justify-between">
-                        <dt class="text-gray-600">Online</dt>
-                        <dd class="font-semibold text-gray-900">{{ number_format($napzaras->online_bevetel ?? 0, 0, ',', ' ') }} Ft</dd>
-                    </div>
-                    <div class="flex justify-between">
-                        <dt class="text-gray-600">Egyéb</dt>
-                        <dd class="font-semibold text-gray-900">{{ number_format($napzaras->egyeb_bevetel ?? 0, 0, ',', ' ') }} Ft</dd>
-                    </div>
-                    <div class="flex justify-between pt-3 border-t-2 border-green-200">
-                        <dt class="font-bold text-gray-900">Összes bevétel</dt>
-                        <dd class="font-bold text-green-700 text-xl">{{ number_format($napzaras->ossz_bevetel ?? 0, 0, ',', ' ') }} Ft</dd>
-                    </div>
-                    
-                    @if($napzaras->zacskos_keszpenz > 0)
-                    <div class="flex justify-between pt-3 border-t bg-yellow-50 -mx-6 px-6 py-3 mt-3">
-                        <dt class="text-yellow-800 font-medium">💰 Zacskóba helyezett készpénz</dt>
-                        <dd class="font-bold text-yellow-800">{{ number_format($napzaras->zacskos_keszpenz ?? 0, 0, ',', ' ') }} Ft</dd>
-                    </div>
-                    <p class="text-xs text-gray-500 italic">* Ez az összeg informatív, nem számít bele az eredménybe</p>
-                    @endif
-                </dl>
-            </div>
+<div class="bg-white rounded-xl shadow p-6">
+    <h2 class="text-xl font-semibold mb-4 text-green-700">Bevételek</h2>
+    <dl class="space-y-3">
+        <div class="flex justify-between">
+            <dt class="text-gray-600">Készpénz</dt>
+            <dd class="font-semibold text-gray-900">{{ number_format($napzaras->keszpenz_bevetel ?? 0, 0, ',', ' ') }} Ft</dd>
+        </div>
+        <div class="flex justify-between">
+            <dt class="text-gray-600">Kártya</dt>
+            <dd class="font-semibold text-gray-900">{{ number_format($napzaras->kartya_bevetel ?? 0, 0, ',', ' ') }} Ft</dd>
+        </div>
+        <div class="flex justify-between">
+            <dt class="text-gray-600">Online</dt>
+            <dd class="font-semibold text-gray-900">{{ number_format($napzaras->online_bevetel ?? 0, 0, ',', ' ') }} Ft</dd>
+        </div>
+        <div class="flex justify-between">
+            <dt class="text-gray-600">Egyéb</dt>
+            <dd class="font-semibold text-gray-900">{{ number_format($napzaras->egyeb_bevetel ?? 0, 0, ',', ' ') }} Ft</dd>
+        </div>
+        
+        @if($napzaras->kimeno_szamla > 0)
+        <div class="flex justify-between bg-green-50 -mx-6 px-6 py-2">
+            <dt class="text-green-700 font-medium">📄 Kimenő számla</dt>
+            <dd class="font-semibold text-green-700">+{{ number_format($napzaras->kimeno_szamla ?? 0, 0, ',', ' ') }} Ft</dd>
+        </div>
+        @endif
+        
+        <div class="flex justify-between pt-3 border-t-2 border-green-200">
+            <dt class="font-bold text-gray-900">Összes bevétel</dt>
+            <dd class="font-bold text-green-700 text-xl">{{ number_format($napzaras->ossz_bevetel ?? 0, 0, ',', ' ') }} Ft</dd>
+        </div>
+        
+        @if($napzaras->zacskos_keszpenz > 0)
+        <div class="flex justify-between pt-3 border-t bg-yellow-50 -mx-6 px-6 py-3 mt-3">
+            <dt class="text-yellow-800 font-medium">💰 Zacskóba helyezett készpénz</dt>
+            <dd class="font-bold text-yellow-800">{{ number_format($napzaras->zacskos_keszpenz ?? 0, 0, ',', ' ') }} Ft</dd>
+        </div>
+        <p class="text-xs text-gray-500 italic">* Ez az összeg informatív, nem számít bele az eredménybe</p>
+        @endif
+    </dl>
+</div>
 
+<!-- Napi bérek marad ugyanaz -->
+
+<!-- Kiadások -->
+<div class="bg-white rounded-xl shadow p-6">
+    <h2 class="text-xl font-semibold mb-4 text-red-700">Kiadások</h2>
+    <dl class="space-y-3">
+        <div class="flex justify-between">
+            <dt class="text-gray-600">Egyéb költségek</dt>
+            <dd class="font-semibold text-gray-900">{{ number_format($napzaras->koltsegek ?? 0, 0, ',', ' ') }} Ft</dd>
+        </div>
+        
+        @if($napzaras->bejovo_szamla > 0)
+        <div class="flex justify-between bg-red-50 -mx-6 px-6 py-2">
+            <dt class="text-red-700 font-medium">📄 Bejövő számla</dt>
+            <dd class="font-semibold text-red-700">{{ number_format($napzaras->bejovo_szamla ?? 0, 0, ',', ' ') }} Ft</dd>
+        </div>
+        @endif
+        
+        <div class="flex justify-between pt-3 border-t-2 border-red-200">
+            <dt class="font-bold text-gray-900">Összes kiadás (napi bér + költségek + bejövő számla)</dt>
+            <dd class="font-bold text-red-700 text-xl">{{ number_format($napzaras->ossz_kiadas ?? 0, 0, ',', ' ') }} Ft</dd>
+        </div>
+    </dl>
+</div>
             <!-- Napi bérek -->
             <div class="bg-white rounded-xl shadow p-6">
                 <h2 class="text-xl font-semibold mb-4 text-red-700">Napi bérek</h2>

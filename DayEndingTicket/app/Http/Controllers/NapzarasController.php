@@ -82,6 +82,8 @@ class NapzarasController extends Controller
             'online_bevetel'    => 'nullable|numeric|min:0',
             'egyeb_bevetel'     => 'nullable|numeric|min:0',
             'zacskos_keszpenz'  => 'nullable|numeric|min:0',
+            'kimeno_szamla'     => 'nullable|numeric|min:0',  // ÚJ
+            'bejovo_szamla'     => 'nullable|numeric|min:0',
             'koltsegek'         => 'nullable|numeric|min:0',
             'megjegyzes'        => 'nullable|string|max:1000',
             'nav_foto_link'     => 'nullable|url',
@@ -152,6 +154,8 @@ class NapzarasController extends Controller
             'online_bevetel'     => $validated['online_bevetel'] ?? 0,
             'egyeb_bevetel'      => $validated['egyeb_bevetel'] ?? 0,
             'zacskos_keszpenz'   => $validated['zacskos_keszpenz'] ?? 0,
+            'kimeno_szamla'      => $validated['kimeno_szamla'] ?? 0,      // ÚJ
+            'bejovo_szamla'      => $validated['bejovo_szamla'] ?? 0,  
             'napi_ber'           => $osszesNapiBer,
             'koltsegek'          => $validated['koltsegek'] ?? 0,
             'megjegyzes'         => $validated['megjegyzes'],
@@ -220,6 +224,8 @@ class NapzarasController extends Controller
             'online_bevetel' => 'nullable|numeric|min:0',
             'egyeb_bevetel' => 'nullable|numeric|min:0',
             'zacskos_keszpenz' => 'nullable|numeric|min:0',
+            'kimeno_szamla'     => 'nullable|numeric|min:0',  // ÚJ
+            'bejovo_szamla'     => 'nullable|numeric|min:0',
             'koltsegek' => 'nullable|numeric|min:0',
             'megjegyzes' => 'nullable|string|max:1000',
             'nav_foto_link' => 'nullable|url',
@@ -265,6 +271,8 @@ class NapzarasController extends Controller
             'online_bevetel' => $validated['online_bevetel'] ?? 0,
             'egyeb_bevetel' => $validated['egyeb_bevetel'] ?? 0,
             'zacskos_keszpenz' => $validated['zacskos_keszpenz'] ?? 0,
+            'kimeno_szamla' => $validated['kimeno_szamla'] ?? 0,      // ÚJ
+            'bejovo_szamla' => $validated['bejovo_szamla'] ?? 0,  
             'napi_ber' => $osszesNapiBer,
             'koltsegek' => $validated['koltsegek'] ?? 0,
             'megjegyzes' => $validated['megjegyzes'],
